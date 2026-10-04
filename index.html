@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My AI</title>
+</head>
+
+<body>
+    <h1>🤖 My AI</h1>
+
+    <input id="message" placeholder="Talk to me..." />
+    <button onclick="talk()">Send</button>
+
+    <p id="response"></p>
+
+    <script>
+        function talk() {
+            const message = document.getElementById("message").value;
+            const response = document.getElementById("response");
+
+            response.innerText =
+                "You said: " + message;
+        }
+    </script>
+</body>
+</html>
