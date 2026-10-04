@@ -73,10 +73,12 @@ const vocabulary = [
     "AI"
 ];
 
-// Size of each embedding vector
 const embeddingSize = 8;
 
-// Create our embedding table
+// -----------------------------
+// EMBEDDINGS
+// -----------------------------
+
 const embeddings = [];
 
 for (let token = 0; token < vocabulary.length; token++) {
@@ -85,7 +87,6 @@ for (let token = 0; token < vocabulary.length; token++) {
 
     for (let i = 0; i < embeddingSize; i++) {
 
-        // Small random number
         vector.push(
             (Math.random() * 2 - 1) * 0.1
         );
@@ -94,6 +95,11 @@ for (let token = 0; token < vocabulary.length; token++) {
 
     embeddings.push(vector);
 }
+
+
+// -----------------------------
+// TOKENIZER
+// -----------------------------
 
 function tokenize(text) {
 
@@ -112,31 +118,224 @@ function tokenize(text) {
     });
 }
 
+
+// -----------------------------
+// RANDOM MATRIX
+// -----------------------------
+
+function randomMatrix(rows, cols) {
+
+    const matrix = [];
+
+    for (let i = 0; i < rows; i++) {
+
+        const row = [];
+
+        for (let j = 0; j < cols; j++) {
+
+            row.push(
+                (Math.random() * 2 - 1) * 0.1
+            );
+
+        }
+
+        matrix.push(row);
+    }
+
+    return matrix;
+}
+
+
+// -----------------------------
+// MATRIX × VECTOR
+// -----------------------------
+
+function matVec(matrix, vector) {
+
+    const result = [];
+
+    for (let i = 0; i < matrix.length; i++) {
+
+        let sum = 0;
+
+        for (let j = 0; j < vector.length; j++) {
+
+            sum += matrix[i][j] * vector[j];
+
+        }
+
+        result.push(sum);
+    }
+
+    return result;
+}
+
+
+// -----------------------------
+// DOT PRODUCT
+// -----------------------------
+
+function dot(a, b) {
+
+    let sum = 0;
+
+    for (let i = 0; i < a.length; i++) {
+
+        sum += a[i] * b[i];
+
+    }
+
+    return sum;
+}
+
+
+// -----------------------------
+// SOFTMAX
+// -----------------------------
+
+function softmax(values) {
+
+    const max = Math.max(...values);
+
+    const expValues = values.map(
+        x => Math.exp(x - max)
+    );
+
+    const total = expValues.reduce(
+        (a, b) => a + b,
+        0
+    );
+
+    return expValues.map(
+        x => x / total
+    );
+}
+
+
+// -----------------------------
+// SELF ATTENTION
+// -----------------------------
+
+function selfAttention(tokens) {
+
+    const dimension = embeddingSize;
+
+    // Random learned matrices
+    const Wq = randomMatrix(
+        dimension,
+        dimension
+    );
+
+    const Wk = randomMatrix(
+        dimension,
+        dimension
+    );
+
+    const Wv = randomMatrix(
+        dimension,
+        dimension
+    );
+
+    // Create Q, K and V
+    const Q = [];
+    const K = [];
+    const V = [];
+
+    for (const token of tokens) {
+
+        const embedding = embeddings[token];
+
+        Q.push(matVec(Wq, embedding));
+        K.push(matVec(Wk, embedding));
+        V.push(matVec(Wv, embedding));
+
+    }
+
+    // Calculate attention
+    const outputs = [];
+
+    for (let i = 0; i < tokens.length; i++) {
+
+        const scores = [];
+
+        for (let j = 0; j < tokens.length; j++) {
+
+            const score =
+                dot(Q[i], K[j]) /
+                Math.sqrt(dimension);
+
+            scores.push(score);
+
+        }
+
+        const weights = softmax(scores);
+
+        const output =
+            new Array(dimension).fill(0);
+
+        for (let j = 0; j < tokens.length; j++) {
+
+            for (let d = 0; d < dimension; d++) {
+
+                output[d] +=
+                    weights[j] * V[j][d];
+
+            }
+
+        }
+
+        outputs.push(output);
+
+    }
+
+    return outputs;
+}
+
+
+// -----------------------------
+// RUN
+// -----------------------------
+
 function run() {
 
-    const text = document
-        .getElementById("input")
-        .value;
+    const text =
+        document.getElementById("input").value;
 
-    const tokenIDs = tokenize(text);
+    const tokens = tokenize(text);
+
+    const attention =
+        selfAttention(tokens);
 
     let result = "";
 
-    for (const id of tokenIDs) {
+    result += "Tokens:\n";
+
+    for (let i = 0; i < tokens.length; i++) {
 
         result +=
-            vocabulary[id] +
-            " (" + id + ")\n";
+            vocabulary[tokens[i]] +
+            " (" +
+            tokens[i] +
+            ")\n";
+
+    }
+
+    result += "\nSelf-Attention Output:\n\n";
+
+    for (let i = 0; i < attention.length; i++) {
 
         result +=
-            "[" +
-            embeddings[id]
+            vocabulary[tokens[i]] +
+            " → [" +
+            attention[i]
                 .map(x => x.toFixed(4))
                 .join(", ") +
             "]\n\n";
+
     }
 
-    document.getElementById("output").textContent = result;
+    document.getElementById("output")
+        .textContent = result;
 }
 
 </script>
