@@ -43,6 +43,7 @@
             border-radius: 10px;
             margin-top: 15px;
             white-space: pre-wrap;
+            overflow-x: auto;
         }
     </style>
 </head>
@@ -55,7 +56,7 @@
 
 <br>
 
-<button onclick="tokenize()">Tokenize</button>
+<button onclick="run()">Create Embeddings</button>
 
 <div id="output">Waiting...</div>
 
@@ -72,35 +73,70 @@ const vocabulary = [
     "AI"
 ];
 
-function tokenize() {
+// Size of each embedding vector
+const embeddingSize = 8;
 
-    const text = document
-        .getElementById("input")
-        .value
-        .trim();
+// Create our embedding table
+const embeddings = [];
 
-    const words = text.split(/\s+/);
+for (let token = 0; token < vocabulary.length; token++) {
 
-    const tokenIDs = words.map(word => {
+    const vector = [];
+
+    for (let i = 0; i < embeddingSize; i++) {
+
+        // Small random number
+        vector.push(
+            (Math.random() * 2 - 1) * 0.1
+        );
+
+    }
+
+    embeddings.push(vector);
+}
+
+function tokenize(text) {
+
+    const words = text.trim().split(/\s+/);
+
+    return words.map(word => {
 
         const index = vocabulary.indexOf(word);
 
-        // Unknown words become <UNK>
         if (index === -1) {
             return 1;
         }
 
         return index;
+
     });
+}
 
-    document.getElementById("output").textContent =
-        "Text:\n" +
-        text +
-        "\n\nTokens:\n" +
-        words.join(" | ") +
-        "\n\nToken IDs:\n" +
-        tokenIDs.join(", ");
+function run() {
 
+    const text = document
+        .getElementById("input")
+        .value;
+
+    const tokenIDs = tokenize(text);
+
+    let result = "";
+
+    for (const id of tokenIDs) {
+
+        result +=
+            vocabulary[id] +
+            " (" + id + ")\n";
+
+        result +=
+            "[" +
+            embeddings[id]
+                .map(x => x.toFixed(4))
+                .join(", ") +
+            "]\n\n";
+    }
+
+    document.getElementById("output").textContent = result;
 }
 
 </script>
