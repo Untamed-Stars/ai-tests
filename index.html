@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>My AI</title>
 
     <style>
@@ -9,7 +10,7 @@
             background: #111827;
             color: white;
             max-width: 800px;
-            margin: 40px auto;
+            margin: auto;
             padding: 20px;
         }
 
@@ -17,28 +18,19 @@
             text-align: center;
         }
 
-        #chat {
+        #status {
             background: #1f2937;
-            border-radius: 12px;
-            padding: 20px;
-            min-height: 300px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 15px;
         }
 
-        input {
-            width: 75%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-        }
-
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            background: #3b82f6;
-            color: white;
-            cursor: pointer;
+        #chat {
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 12px;
+            min-height: 300px;
+            margin-bottom: 15px;
         }
 
         .user {
@@ -50,46 +42,120 @@
             color: #34d399;
             margin: 15px 0;
         }
+
+        input {
+            width: 70%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #555;
+        }
     </style>
 </head>
 
 <body>
 
-    <h1>🤖 My AI</h1>
+<h1>🤖 My AI</h1>
 
-    <div id="chat">
-        <div class="ai">
-            AI: Hello! I'm your AI. 👋
-        </div>
+<div id="status">
+    Loading AI...
+</div>
+
+<div id="chat">
+    <div class="ai">
+        AI: Loading my brain... 🧠
     </div>
+</div>
 
-    <input id="message" placeholder="Talk to me..." />
-    <button onclick="talk()">Send</button>
+<input id="message" placeholder="Talk to me..." disabled>
+<button id="send" onclick="talk()" disabled>Send</button>
 
-    <script>
-        function talk() {
-            const input = document.getElementById("message");
-            const chat = document.getElementById("chat");
+<script type="module">
 
-            const message = input.value.trim();
+import { pipeline } from
+"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2";
 
-            if (!message) return;
+const status = document.getElementById("status");
+const input = document.getElementById("message");
+const send = document.getElementById("send");
+const chat = document.getElementById("chat");
 
-            chat.innerHTML += `
-                <div class="user">
-                    You: ${message}
-                </div>
-            `;
+let generator;
 
-            chat.innerHTML += `
-                <div class="ai">
-                    AI: I'm thinking... 🤔
-                </div>
-            `;
+async function loadAI() {
 
-            input.value = "";
+    status.innerText = "Downloading AI model... ⬇️";
+
+    generator = await pipeline(
+        "text-generation",
+        "onnx-community/Qwen2.5-0.5B-Instruct",
+        {
+            device: "webgpu"
         }
-    </script>
+    );
+
+    status.innerText = "AI ready! 🟢";
+
+    input.disabled = false;
+    send.disabled = false;
+}
+
+async function talk() {
+
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    chat.innerHTML += `
+        <div class="user">
+            You: ${message}
+        </div>
+    `;
+
+    input.value = "";
+
+    chat.innerHTML += `
+        <div class="ai" id="thinking">
+            AI: Thinking... 🤔
+        </div>
+    `;
+
+    const thinking = document.getElementById("thinking");
+
+    try {
+
+        const result = await generator(message, {
+            max_new_tokens: 100,
+            temperature: 0.7
+        });
+
+        thinking.innerText =
+            "AI: " + result[0].generated_text;
+
+    } catch (error) {
+
+        thinking.innerText =
+            "AI error: " + error.message;
+
+        console.error(error);
+    }
+}
+
+loadAI();
+
+</script>
 
 </body>
 </html>
