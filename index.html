@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>My AI</title>
+    <title>My Tiny Transformer</title>
 
     <style>
         body {
@@ -18,143 +18,56 @@
             text-align: center;
         }
 
-        #status {
-            background: #1f2937;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        #chat {
+        #output {
             background: #1f2937;
             padding: 20px;
-            border-radius: 12px;
-            min-height: 300px;
-            margin-bottom: 15px;
-        }
-
-        .user {
-            color: #60a5fa;
-            margin: 15px 0;
-        }
-
-        .ai {
-            color: #34d399;
-            margin: 15px 0;
-        }
-
-        input {
-            width: 70%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
+            border-radius: 10px;
+            white-space: pre-wrap;
         }
 
         button {
-            padding: 12px 18px;
-            border: none;
-            border-radius: 8px;
+            padding: 12px 20px;
             background: #3b82f6;
             color: white;
+            border: 0;
+            border-radius: 8px;
             cursor: pointer;
-        }
-
-        button:disabled {
-            background: #555;
         }
     </style>
 </head>
 
 <body>
 
-<h1>🤖 My AI</h1>
+<h1>🧠 My Tiny Transformer</h1>
 
-<div id="status">
-    Loading AI...
-</div>
+<button onclick="run()">Run</button>
 
-<div id="chat">
-    <div class="ai">
-        AI: Loading my brain... 🧠
-    </div>
-</div>
+<div id="output">Waiting...</div>
 
-<input id="message" placeholder="Talk to me..." disabled>
-<button id="send" onclick="talk()" disabled>Send</button>
+<script>
 
-<script type="module">
+function run() {
 
-import { pipeline } from
-"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2";
+    const output = document.getElementById("output");
 
-const status = document.getElementById("status");
-const input = document.getElementById("message");
-const send = document.getElementById("send");
-const chat = document.getElementById("chat");
+    // Our tiny vocabulary
+    const vocabulary = [
+        "hello",
+        "world",
+        "I",
+        "am",
+        "an",
+        "AI"
+    ];
 
-let generator;
+    output.textContent =
+        "Vocabulary:\n\n" +
+        vocabulary.join(", ") +
+        "\n\nOur AI has " +
+        vocabulary.length +
+        " possible tokens.";
 
-async function loadAI() {
-
-    status.innerText = "Downloading AI model... ⬇️";
-
-    generator = await pipeline(
-        "text-generation",
-        "onnx-community/Qwen2.5-0.5B-Instruct",
-        {
-            device: "webgpu",
-            dtype: "q4"
-        }
-    );
-
-    status.innerText = "AI ready! 🟢";
-
-    input.disabled = false;
-    send.disabled = false;
 }
-
-async function talk() {
-
-    const message = input.value.trim();
-
-    if (!message) return;
-
-    chat.innerHTML += `
-        <div class="user">
-            You: ${message}
-        </div>
-    `;
-
-    input.value = "";
-
-    chat.innerHTML += `
-        <div class="ai" id="thinking">
-            AI: Thinking... 🤔
-        </div>
-    `;
-
-    const thinking = document.getElementById("thinking");
-
-    try {
-
-        const result = await generator(message, {
-            max_new_tokens: 100,
-            temperature: 0.7
-        });
-
-        thinking.innerText =
-            "AI: " + result[0].generated_text;
-
-    } catch (error) {
-
-        thinking.innerText =
-            "AI error: " + error.message;
-
-        console.error(error);
-    }
-}
-
-loadAI();
 
 </script>
 
