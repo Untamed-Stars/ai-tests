@@ -2,24 +2,94 @@
 <html>
 <head>
     <title>My AI</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #chat {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 300px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 75%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+        }
+
+        .user {
+            color: #60a5fa;
+            margin: 15px 0;
+        }
+
+        .ai {
+            color: #34d399;
+            margin: 15px 0;
+        }
+    </style>
 </head>
 
 <body>
+
     <h1>🤖 My AI</h1>
+
+    <div id="chat">
+        <div class="ai">
+            AI: Hello! I'm your AI. 👋
+        </div>
+    </div>
 
     <input id="message" placeholder="Talk to me..." />
     <button onclick="talk()">Send</button>
 
-    <p id="response"></p>
-
     <script>
         function talk() {
-            const message = document.getElementById("message").value;
-            const response = document.getElementById("response");
+            const input = document.getElementById("message");
+            const chat = document.getElementById("chat");
 
-            response.innerText =
-                "You said: " + message;
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            chat.innerHTML += `
+                <div class="user">
+                    You: ${message}
+                </div>
+            `;
+
+            chat.innerHTML += `
+                <div class="ai">
+                    AI: I'm thinking... 🤔
+                </div>
+            `;
+
+            input.value = "";
         }
     </script>
+
 </body>
 </html>
