@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>My Tiny Transformer</title>
+    <title>My Tiny AI - Training</title>
 
     <style>
         body {
@@ -18,23 +18,18 @@
             text-align: center;
         }
 
-        textarea {
-            width: 100%;
-            height: 100px;
-            box-sizing: border-box;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            margin-bottom: 10px;
-        }
-
         button {
             padding: 12px 20px;
+            margin: 5px;
             background: #3b82f6;
             color: white;
             border: 0;
             border-radius: 8px;
             cursor: pointer;
+        }
+
+        button:disabled {
+            background: #555;
         }
 
         #output {
@@ -43,28 +38,33 @@
             border-radius: 10px;
             margin-top: 15px;
             white-space: pre-wrap;
-            overflow-x: auto;
         }
     </style>
 </head>
 
 <body>
 
-<h1>🧠 My Tiny Transformer</h1>
+<h1>🧠 My Tiny AI</h1>
 
-<textarea id="input">hello world I am an AI</textarea>
+<button id="trainButton" onclick="train()">
+    Train AI
+</button>
 
-<br>
+<button onclick="predict()">
+    Test AI
+</button>
 
-<button onclick="run()">Create Embeddings</button>
-
-<div id="output">Waiting...</div>
+<div id="output">
+    Ready to train!
+</div>
 
 <script>
 
+// ==========================================
+// VOCABULARY
+// ==========================================
+
 const vocabulary = [
-    "<PAD>",
-    "<UNK>",
     "hello",
     "world",
     "I",
@@ -73,168 +73,61 @@ const vocabulary = [
     "AI"
 ];
 
-const embeddingSize = 8;
+const vocabSize = vocabulary.length;
 
 
-// =====================================
-// RANDOM NUMBER
-// =====================================
+// ==========================================
+// TRAINING DATA
+// ==========================================
 
-function randomWeight() {
+// Input → expected next word
 
-    return (Math.random() * 2 - 1) * 0.1;
+const trainingData = [
 
-}
+    ["hello", "world"],
+    ["I", "am"],
+    ["am", "an"],
+    ["an", "AI"]
 
-
-// =====================================
-// CREATE MATRIX
-// =====================================
-
-function randomMatrix(rows, cols) {
-
-    const matrix = [];
-
-    for (let i = 0; i < rows; i++) {
-
-        const row = [];
-
-        for (let j = 0; j < cols; j++) {
-
-            row.push(randomWeight());
-
-        }
-
-        matrix.push(row);
-
-    }
-
-    return matrix;
-
-}
+];
 
 
-// =====================================
-// EMBEDDING TABLE
-// =====================================
+// ==========================================
+// MODEL WEIGHTS
+// ==========================================
 
-const embeddings = [];
+// Each input word gets a score for every
+// possible output word.
 
-for (let token = 0; token < vocabulary.length; token++) {
+const weights = [];
 
-    const vector = [];
+for (let i = 0; i < vocabSize; i++) {
 
-    for (let i = 0; i < embeddingSize; i++) {
+    const row = [];
 
-        vector.push(randomWeight());
+    for (let j = 0; j < vocabSize; j++) {
+
+        row.push(
+            (Math.random() * 2 - 1) * 0.1
+        );
 
     }
 
-    embeddings.push(vector);
+    weights.push(row);
 
 }
 
 
-// =====================================
-// ATTENTION WEIGHTS
-// =====================================
+// ==========================================
+// LEARNING RATE
+// ==========================================
 
-// IMPORTANT:
-// These are created ONCE.
-
-const Wq = randomMatrix(
-    embeddingSize,
-    embeddingSize
-);
-
-const Wk = randomMatrix(
-    embeddingSize,
-    embeddingSize
-);
-
-const Wv = randomMatrix(
-    embeddingSize,
-    embeddingSize
-);
+const learningRate = 0.1;
 
 
-// =====================================
-// TOKENIZER
-// =====================================
-
-function tokenize(text) {
-
-    const words = text
-        .trim()
-        .split(/\s+/);
-
-    return words.map(word => {
-
-        const index =
-            vocabulary.indexOf(word);
-
-        if (index === -1) {
-            return 1;
-        }
-
-        return index;
-
-    });
-
-}
-
-
-// =====================================
-// MATRIX × VECTOR
-// =====================================
-
-function matVec(matrix, vector) {
-
-    const result = [];
-
-    for (let i = 0; i < matrix.length; i++) {
-
-        let sum = 0;
-
-        for (let j = 0; j < vector.length; j++) {
-
-            sum +=
-                matrix[i][j] *
-                vector[j];
-
-        }
-
-        result.push(sum);
-
-    }
-
-    return result;
-
-}
-
-
-// =====================================
-// DOT PRODUCT
-// =====================================
-
-function dot(a, b) {
-
-    let sum = 0;
-
-    for (let i = 0; i < a.length; i++) {
-
-        sum += a[i] * b[i];
-
-    }
-
-    return sum;
-
-}
-
-
-// =====================================
+// ==========================================
 // SOFTMAX
-// =====================================
+// ==========================================
 
 function softmax(values) {
 
@@ -259,172 +152,262 @@ function softmax(values) {
 }
 
 
-// =====================================
-// SELF ATTENTION
-// =====================================
+// ==========================================
+// WORD → ID
+// ==========================================
 
-function selfAttention(tokens) {
+function wordToID(word) {
 
-    const Q = [];
-    const K = [];
-    const V = [];
+    return vocabulary.indexOf(word);
 
-    // -------------------------------
-    // Create Q K V
-    // -------------------------------
+}
 
-    for (const token of tokens) {
 
-        const embedding =
-            embeddings[token];
+// ==========================================
+// ID → WORD
+// ==========================================
 
-        Q.push(
-            matVec(Wq, embedding)
+function idToWord(id) {
+
+    return vocabulary[id];
+
+}
+
+
+// ==========================================
+// TRAIN
+// ==========================================
+
+async function train() {
+
+    const button =
+        document.getElementById(
+            "trainButton"
         );
 
-        K.push(
-            matVec(Wk, embedding)
+    button.disabled = true;
+
+    const output =
+        document.getElementById(
+            "output"
         );
 
-        V.push(
-            matVec(Wv, embedding)
-        );
 
-    }
+    const epochs = 1000;
 
-
-    // -------------------------------
-    // Attention
-    // -------------------------------
-
-    const outputs = [];
 
     for (
-        let i = 0;
-        i < tokens.length;
-        i++
+        let epoch = 0;
+        epoch < epochs;
+        epoch++
     ) {
 
-        const scores = [];
-
-        for (
-            let j = 0;
-            j < tokens.length;
-            j++
-        ) {
-
-            const score =
-                dot(Q[i], K[j]) /
-                Math.sqrt(embeddingSize);
-
-            scores.push(score);
-
-        }
+        let totalLoss = 0;
 
 
-        const weights =
-            softmax(scores);
+        // Go through every training example
+
+        for (const example of trainingData) {
+
+            const inputWord =
+                example[0];
+
+            const targetWord =
+                example[1];
 
 
-        const output =
-            new Array(
-                embeddingSize
-            ).fill(0);
+            const inputID =
+                wordToID(inputWord);
+
+            const targetID =
+                wordToID(targetWord);
 
 
-        for (
-            let j = 0;
-            j < tokens.length;
-            j++
-        ) {
+            // --------------------------------
+            // FORWARD PASS
+            // --------------------------------
+
+            const logits =
+                weights[inputID];
+
+
+            const probabilities =
+                softmax(logits);
+
+
+            // --------------------------------
+            // LOSS
+            // --------------------------------
+
+            const probability =
+                probabilities[targetID];
+
+
+            const loss =
+                -Math.log(
+                    Math.max(
+                        probability,
+                        1e-10
+                    )
+                );
+
+
+            totalLoss += loss;
+
+
+            // --------------------------------
+            // BACKPROPAGATION
+            // --------------------------------
 
             for (
-                let d = 0;
-                d < embeddingSize;
-                d++
+                let j = 0;
+                j < vocabSize;
+                j++
             ) {
 
-                output[d] +=
-                    weights[j] *
-                    V[j][d];
+                let gradient =
+                    probabilities[j];
+
+                if (j === targetID) {
+
+                    gradient -= 1;
+
+                }
+
+
+                // Gradient descent
+
+                weights[inputID][j] -=
+                    learningRate *
+                    gradient;
 
             }
 
         }
 
-        outputs.push(output);
+
+        // --------------------------------
+        // DISPLAY PROGRESS
+        // --------------------------------
+
+        if (
+            epoch % 50 === 0 ||
+            epoch === epochs - 1
+        ) {
+
+            output.textContent =
+                "Training...\n\n" +
+                "Epoch: " +
+                epoch +
+                " / " +
+                epochs +
+                "\n\n" +
+                "Loss: " +
+                totalLoss.toFixed(4);
+
+            // Let the browser breathe
+
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        0
+                    )
+            );
+
+        }
 
     }
 
-    return outputs;
+
+    output.textContent =
+        "🎉 Training finished!\n\n" +
+        "The model has learned the training examples.\n\n" +
+        "Try pressing 'Test AI'.";
+
+    button.disabled = false;
 
 }
 
 
-// =====================================
-// RUN MODEL
-// =====================================
+// ==========================================
+// PREDICT
+// ==========================================
 
-function run() {
+function predict() {
 
-    const text =
-        document
-            .getElementById("input")
-            .value;
-
-    const tokens =
-        tokenize(text);
+    const input =
+        prompt(
+            "Enter a word:\n\n" +
+            vocabulary.join(", ")
+        );
 
 
-    const outputs =
-        selfAttention(tokens);
+    if (!input) return;
 
 
-    let result = "";
+    const inputID =
+        wordToID(
+            input.trim()
+        );
 
 
-    result +=
-        "Input:\n" +
-        text +
-        "\n\n";
+    if (inputID === -1) {
+
+        alert(
+            "I don't know that word yet."
+        );
+
+        return;
+
+    }
 
 
-    result +=
-        "Token IDs:\n" +
-        tokens.join(", ") +
-        "\n\n";
+    const probabilities =
+        softmax(
+            weights[inputID]
+        );
 
 
-    result +=
-        "Attention outputs:\n\n";
-
+    let bestID = 0;
 
     for (
-        let i = 0;
-        i < outputs.length;
+        let i = 1;
+        i < vocabSize;
         i++
     ) {
 
-        result +=
-            vocabulary[tokens[i]] +
-            " → [" +
-            outputs[i]
-                .map(
-                    x => x.toFixed(4)
-                )
-                .join(", ") +
-            "]\n\n";
+        if (
+            probabilities[i] >
+            probabilities[bestID]
+        ) {
+
+            bestID = i;
+
+        }
 
     }
 
 
     document
         .getElementById("output")
-        .textContent = result;
+        .textContent =
+
+        "Input:\n" +
+        input +
+
+        "\n\nPrediction:\n" +
+        idToWord(bestID) +
+
+        "\n\nConfidence:\n" +
+        (
+            probabilities[bestID] * 100
+        ).toFixed(2) +
+        "%";
 
 }
 
 </script>
-    
+
 </body>
 </html>
