@@ -102,7 +102,8 @@ async function loadAI() {
         "text-generation",
         "onnx-community/Qwen2.5-0.5B-Instruct",
         {
-            device: "webgpu"
+            device: "webgpu",
+            dtype: "q4"
         }
     );
 
